@@ -1,4 +1,4 @@
-defmodule PhoenixChat.RoomChannel do
+defmodule PhoenixChatWeb.RoomChannel do
   use PhoenixChatWeb, :channel
   alias PhoenixChatWeb.Presence
 
