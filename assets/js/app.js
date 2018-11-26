@@ -28,55 +28,77 @@ console.log('user = ', user);
 let socket = new Socket("/socket", {params: {user: user}})
 socket.connect()
 
-// Presence
-let presences = {}
+let channel = socket.channel("room:lobby", {})
+let presence = new Presence(channel)
+
+function renderOnlineUsers(presence) {
+  console.log('renderOnlineUsers', presence)
+  let response = ""
+
+  presence.list((id, {metas: [first, ...rest]}) => {
+    let count = rest.length + 1
+    response += `<br>${id} (count: ${count})</br>`
+  })
+
+  // document.querySelector("main[role=main]").innerHTML = response
+  document.getElementById("UserList").innerHTML = response
+
+}
+
+socket.connect()
+
+presence.onSync(() => renderOnlineUsers(presence))
+
+channel.join()
+
 
 let formatTimestamp = (timestamp) => {
   let date = new Date(timestamp * 1000)
   return date.toLocaleTimeString()
 }
-let listBy = (user, {metas: metas}) => {
-  return {
-    user: user,
-    onlineAt: formatTimestamp(metas[0].online_at)
-  }
-}
+// let listBy = (user, {metas: metas}) => {
+//   return {
+//     user: user,
+//     onlineAt: formatTimestamp(metas[0].online_at)
+//   }
+// }
 
-let userList = document.getElementById("UserList")
-let render = (presences) => {
-  console.log('render presences', presences);
+// let userList = document.getElementById("UserList")
+// let render = (presences) => {
+//   console.log('render presences', presences);
 
-  userList.innerHTML = Presence.list(presences, listBy)
-    .map(presence => `
-      <li>
-        <b>${presence.user}</b>
-        <br><small>online since ${presence.onlineAt}</small>
-      </li>
-    `)
-    .join("")
-}
+//   userList.innerHTML = Presence.list(presences, listBy)
+//     .map(presence => `
+//       <li>
+//         <b>${presence.user}</b>
+//         <br><small>online since ${presence.onlineAt}</small>
+//       </li>
+//     `)
+//     .join("")
+// }
 
 // Channels
-let room = socket.channel("room:lobby", {})
-room.on("presence_state", state => {
-  console.log('room on state', state);
-  presences = Presence.syncState(presences, state)
-  render(presences)
-})
 
-room.on("presence_diff", diff => {
-  console.log('room on diff', diff);
-  presences = Presence.syncDiff(presences, diff)
-  render(presences)
-})
 
-room.join()
+// room.on("presence_state", state => {
+//   console.log('room on state', state);
+//   presences = Presence.syncState(presences, state)
+//   render(presences)
+// })
+
+// room.on("presence_diff", diff => {
+//   console.log('room on diff', diff);
+//   presences = Presence.syncDiff(presences, diff)
+//   render(presences)
+// })
+
+// room.join()
 
 // Chat
 let messageInput = document.getElementById("NewMessage")
 messageInput.addEventListener("keypress", (e) => {
   if (e.keyCode == 13 && messageInput.value != "") {
-    room.push("message:new", messageInput.value)
+    channel.push("message:new", messageInput.value)
     messageInput.value = ""
   }
 })
@@ -93,6 +115,6 @@ let renderMessage = (message) => {
   messageList.scrollTop = messageList.scrollHeight;
 }
 
-room.on("message:new", message => renderMessage(message))
+channel.on("message:new", message => renderMessage(message))
 
 
